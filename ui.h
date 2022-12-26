@@ -54,7 +54,6 @@ namespace splendor
     splendor::Model model;
     splendor::Display display;
     UI(int ac, char **av);
-    void show_table();
     void interact();
   };
 }

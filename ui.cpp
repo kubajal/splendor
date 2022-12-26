@@ -10,6 +10,9 @@ using json = nlohmann::json;
 std::optional<splendor::Config> load_default_config(std::string file_path)
 {
   std::ifstream input_stream(file_path);
+  if(input_stream.fail()) {
+    return {};
+  }
   json data = json::parse(input_stream);
   splendor::Config config = {
       data["player_tokens_max"],
@@ -91,11 +94,6 @@ splendor::UI::UI(int ac, char **av)
   }
 }
 
-void splendor::UI::show_table()
-{
-  display.refresh_display(model);
-}
-
 void splendor::UI::interact()
 {
   int c = getch();
@@ -142,7 +140,7 @@ void draw_card(WINDOW *win, const splendor::Card &card, bool selected)
   {
     box(win, '|', '-');
   }
-  wrefresh(win);
+  wnoutrefresh(win);
 }
 
 void draw_player(splendor::PlayerWindowGroup &window_group, const splendor::PlayerState player)
@@ -165,13 +163,13 @@ void draw_player(splendor::PlayerWindowGroup &window_group, const splendor::Play
   sprintf(buffer, "\n  CARDS\n  White: %d\n  Blue:  %d\n  Green: %d\n  Red:   %d\n  Black: %d\n", player.white_cards, player.blue_cards, player.green_cards, player.red_cards, player.black_cards);
   wprintw(window_group.cards_window, buffer);
   box(window_group.reserved_cards_main_window, 'z', 'z');
-  wrefresh(window_group.main);
-  wrefresh(window_group.tokens_window);
-  wrefresh(window_group.cards_window);
-  wrefresh(window_group.reserved_cards_main_window);
-  wrefresh(window_group.reserved_cards[0]);
-  wrefresh(window_group.reserved_cards[1]);
-  wrefresh(window_group.reserved_cards[2]);
+  wnoutrefresh(window_group.main);
+  wnoutrefresh(window_group.tokens_window);
+  wnoutrefresh(window_group.cards_window);
+  wnoutrefresh(window_group.reserved_cards_main_window);
+  wnoutrefresh(window_group.reserved_cards[0]);
+  wnoutrefresh(window_group.reserved_cards[1]);
+  wnoutrefresh(window_group.reserved_cards[2]);
 }
 
 void update_card(WINDOW *win, const splendor::Card &card, bool selected)
@@ -184,15 +182,15 @@ void update_card(WINDOW *win, const splendor::Card &card, bool selected)
   {
     box(win, '|', '-');
   }
-  wrefresh(win);
+  wnoutrefresh(win);
 }
 
 void splendor::Display::initialize(splendor::Model &model)
 {
   initscr();
-  refresh();
   noecho();
   keypad(stdscr, TRUE);
+  refresh();
 
   display_state.selected_active_card = 0;
   display_state.selected_pane = CARDS_PANE;
@@ -221,7 +219,6 @@ void splendor::Display::initialize(splendor::Model &model)
   init_pair(PLAYER_CARD_MAIN, COLOR_BLACK, COLOR_YELLOW);
 
   bkgdset(COLOR_PAIR(TABLE_BACKGROUND));
-  refresh();
 
   int row_cards_active_max = model.config.row_cards_active_max;
 
@@ -229,31 +226,43 @@ void splendor::Display::initialize(splendor::Model &model)
   tier2_windows.resize(row_cards_active_max);
   tier3_windows.resize(row_cards_active_max);
 
-  cards_window = newwin(3 * (CARD_SIZE_Y + 1) + 1, row_cards_active_max * (CARD_SIZE_X+1)+3, 0, 0);
+  cards_window = newwin(3 * (CARD_SIZE_Y + 1) + 1, row_cards_active_max * (CARD_SIZE_X + 1) + 3, 0, 0);
   for (int i = 0; i < row_cards_active_max; i++)
   {
     tier1_windows[i] = derwin(cards_window, CARD_SIZE_Y, CARD_SIZE_X, 1, i * (CARD_SIZE_X + 1) + 2);
     tier2_windows[i] = derwin(cards_window, CARD_SIZE_Y, CARD_SIZE_X, CARD_SIZE_Y + 2, i * (CARD_SIZE_X + 1) + 2);
     tier3_windows[i] = derwin(cards_window, CARD_SIZE_Y, CARD_SIZE_X, 2 * (CARD_SIZE_Y + 1) + 1, i * (CARD_SIZE_X + 1) + 2);
-    draw_card(tier1_windows[i], model.tier1[i], display_state.selected_active_card == i);
-    draw_card(tier2_windows[i], model.tier2[i], display_state.selected_active_card == (i + row_cards_active_max));
-    draw_card(tier3_windows[i], model.tier3[i], display_state.selected_active_card == (i + 2 * row_cards_active_max));
   }
 
   player_windows.resize(model.players.size());
   for (int i = 0; i < model.players.size(); i++)
   {
     player_windows[i].main = newwin(PLAYER_WINDOW_SIZE_Y, PLAYER_WINDOW_SIZE_X, row_cards_active_max * CARD_SIZE_Y + i * (PLAYER_WINDOW_SIZE_Y + 1) - 3, 0);
-    player_windows[i].score_window = derwin(player_windows[i].main, PLAYER_WINDOW_SIZE_Y, 2*(CARD_SIZE_X+1) + 5, 0, 2);
-    player_windows[i].tokens_window = derwin(player_windows[i].score_window, PLAYER_WINDOW_SIZE_Y-2, CARD_SIZE_X, 1, 0);
-    player_windows[i].cards_window = derwin(player_windows[i].score_window, PLAYER_WINDOW_SIZE_Y-2, CARD_SIZE_X, 1, CARD_SIZE_X + 1);
-    player_windows[i].reserved_cards_main_window = derwin(player_windows[i].main, PLAYER_WINDOW_SIZE_Y-2, CARD_SIZE_X * 3, 1, 2 * (CARD_SIZE_X + 1));
+    player_windows[i].score_window = derwin(player_windows[i].main, PLAYER_WINDOW_SIZE_Y, 2 * (CARD_SIZE_X + 1) + 5, 0, 2);
+    player_windows[i].tokens_window = derwin(player_windows[i].score_window, PLAYER_WINDOW_SIZE_Y - 2, CARD_SIZE_X, 1, 0);
+    player_windows[i].cards_window = derwin(player_windows[i].score_window, PLAYER_WINDOW_SIZE_Y - 2, CARD_SIZE_X, 1, CARD_SIZE_X + 1);
+    player_windows[i].reserved_cards_main_window = derwin(player_windows[i].main, PLAYER_WINDOW_SIZE_Y - 2, CARD_SIZE_X * 3, 1, 2 * (CARD_SIZE_X + 1));
     player_windows[i].reserved_cards[0] = derwin(player_windows[i].reserved_cards_main_window, CARD_SIZE_Y, CARD_SIZE_X, 1, 1);
     player_windows[i].reserved_cards[1] = derwin(player_windows[i].reserved_cards_main_window, CARD_SIZE_Y, CARD_SIZE_X, CARD_SIZE_X + 2, 1);
     player_windows[i].reserved_cards[2] = derwin(player_windows[i].reserved_cards_main_window, CARD_SIZE_Y, CARD_SIZE_X, 2 * (CARD_SIZE_X + 1) + 1, 1);
+  }
+  for (int i = 0; i < model.players.size(); i++)
+  {
     draw_player(player_windows[i], model.players[i]);
   }
-}
+  for (int i = 0; i < row_cards_active_max; i++)
+  {
+    draw_card(tier1_windows[i], model.tier1[i], display_state.selected_active_card == i);
+    draw_card(tier2_windows[i], model.tier2[i], display_state.selected_active_card == (i + row_cards_active_max));
+    draw_card(tier3_windows[i], model.tier3[i], display_state.selected_active_card == (i + 2 * row_cards_active_max));
+  }
+
+  // draw_card & draw_player call wnoutrefresh
+  // this finalizes drawing to the screen
+  // https://linux.die.net/man/3/wrefresh
+  doupdate();
+  refresh();
+ }
 
 void splendor::Display::refresh_display(splendor::Model &model)
 {
@@ -261,15 +270,15 @@ void splendor::Display::refresh_display(splendor::Model &model)
   {
   case CARDS_PANE:
     wborder(player_windows[model.active_player].main, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
-    wrefresh(player_windows[model.active_player].main);
+    wnoutrefresh(player_windows[model.active_player].main);
     box(cards_window, '%', '%');
-    wrefresh(cards_window);
+    wnoutrefresh(cards_window);
     break;
   case PLAYER_PANE:
     wborder(cards_window, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
-    wrefresh(cards_window);
+    wnoutrefresh(cards_window);
     box(player_windows[model.active_player].main, '%', '%');
-    wrefresh(player_windows[model.active_player].main);
+    wnoutrefresh(player_windows[model.active_player].main);
     break;
   case TOKENS_PANE:
     break;
@@ -282,6 +291,7 @@ void splendor::Display::refresh_display(splendor::Model &model)
     update_card(tier2_windows[i], model.tier2[i], display_state.selected_active_card == (i + row_cards_active_max) && display_state.selected_pane == CARDS_PANE);
     update_card(tier3_windows[i], model.tier3[i], display_state.selected_active_card == (i + 2 * row_cards_active_max) && display_state.selected_pane == CARDS_PANE);
   }
+  doupdate();
 }
 
 splendor::Display::~Display()

@@ -3,10 +3,9 @@
 int main(int ac, char **av)
 {
   splendor::UI ui(ac, av);
-  ui.show_table();
   while (true)
   {
-    ui.show_table();
+    ui.display.refresh_display(ui.model);
     ui.interact();
   }
   return 0;
