@@ -71,7 +71,7 @@ splendor::Model create_model(const splendor::Config &config)
       0};
 }
 
-splendor::UI::UI(int ac, char **av)
+std::optional<splendor::Model> splendor::CLI::get_model(int ac, char **av)
 {
   po::options_description desc("Allowed options");
   desc.add_options()("help", "produce help message")("config-path", po::value<std::string>()->default_value("assets/config.json"), "path to Splendor config");
@@ -88,38 +88,38 @@ splendor::UI::UI(int ac, char **av)
     if (config)
     {
       auto config_value = config.value();
-      model = create_model(config_value);
-      display.initialize(model);
+      return create_model(config_value);
     }
   }
+  return {};
 }
 
-void splendor::UI::interact()
+void splendor::Display::interact(splendor::Model &model)
 {
   int c = getch();
-  switch (display.display_state.selected_pane)
+  switch (state.selected_pane)
   {
   case CARDS_PANE:
     switch (c)
     {
     case KEY_UP:
-      display.display_state.selected_active_card = std::max(0, display.display_state.selected_active_card - model.config.row_cards_active_max);
+      state.selected_active_card = std::max(0, state.selected_active_card - model.config.row_cards_active_max);
       break;
     case KEY_DOWN:
-      display.display_state.selected_active_card = std::min(3 * model.config.row_cards_active_max - 1, display.display_state.selected_active_card + model.config.row_cards_active_max);
+      state.selected_active_card = std::min(3 * model.config.row_cards_active_max - 1, state.selected_active_card + model.config.row_cards_active_max);
       break;
     case KEY_LEFT:
-      display.display_state.selected_active_card = std::max(0, display.display_state.selected_active_card - 1);
+      state.selected_active_card = std::max(0, state.selected_active_card - 1);
       break;
     case KEY_RIGHT:
-      display.display_state.selected_active_card = std::min(3 * model.config.row_cards_active_max - 1, display.display_state.selected_active_card + 1);
+      state.selected_active_card = std::min(3 * model.config.row_cards_active_max - 1, state.selected_active_card + 1);
       break;
     }
   default:
     switch (c)
     {
     case '\t':
-      display.display_state.selected_pane = (display.display_state.selected_pane + 1) % 3;
+      state.selected_pane = (state.selected_pane + 1) % 3;
       break;
     }
   }
@@ -192,12 +192,12 @@ void splendor::Display::initialize(splendor::Model &model)
   keypad(stdscr, TRUE);
   refresh();
 
-  display_state.selected_active_card = 0;
-  display_state.selected_pane = CARDS_PANE;
-  display_state.selected_reserved_card = 0;
-  display_state.selected_token_0 = 0;
-  display_state.selected_token_1 = 0;
-  display_state.selected_token_2 = 0;
+  state.selected_active_card = 0;
+  state.selected_pane = CARDS_PANE;
+  state.selected_reserved_card = 0;
+  state.selected_token_0 = 0;
+  state.selected_token_1 = 0;
+  state.selected_token_2 = 0;
 
   if (!has_colors())
   {
@@ -252,9 +252,9 @@ void splendor::Display::initialize(splendor::Model &model)
   }
   for (int i = 0; i < row_cards_active_max; i++)
   {
-    draw_card(tier1_windows[i], model.tier1[i], display_state.selected_active_card == i);
-    draw_card(tier2_windows[i], model.tier2[i], display_state.selected_active_card == (i + row_cards_active_max));
-    draw_card(tier3_windows[i], model.tier3[i], display_state.selected_active_card == (i + 2 * row_cards_active_max));
+    draw_card(tier1_windows[i], model.tier1[i], state.selected_active_card == i);
+    draw_card(tier2_windows[i], model.tier2[i], state.selected_active_card == (i + row_cards_active_max));
+    draw_card(tier3_windows[i], model.tier3[i], state.selected_active_card == (i + 2 * row_cards_active_max));
   }
 
   // draw_card & draw_player call wnoutrefresh
@@ -266,7 +266,7 @@ void splendor::Display::initialize(splendor::Model &model)
 
 void splendor::Display::refresh_display(splendor::Model &model)
 {
-  switch (display_state.selected_pane)
+  switch (state.selected_pane)
   {
   case CARDS_PANE:
     wborder(player_windows[model.active_player].main, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
@@ -287,9 +287,9 @@ void splendor::Display::refresh_display(splendor::Model &model)
   int row_cards_active_max = tier1_windows.size();
   for (int i = 0; i < row_cards_active_max; i++)
   {
-    update_card(tier1_windows[i], model.tier1[i], display_state.selected_active_card == i && display_state.selected_pane == CARDS_PANE);
-    update_card(tier2_windows[i], model.tier2[i], display_state.selected_active_card == (i + row_cards_active_max) && display_state.selected_pane == CARDS_PANE);
-    update_card(tier3_windows[i], model.tier3[i], display_state.selected_active_card == (i + 2 * row_cards_active_max) && display_state.selected_pane == CARDS_PANE);
+    update_card(tier1_windows[i], model.tier1[i], state.selected_active_card == i && state.selected_pane == CARDS_PANE);
+    update_card(tier2_windows[i], model.tier2[i], state.selected_active_card == (i + row_cards_active_max) && state.selected_pane == CARDS_PANE);
+    update_card(tier3_windows[i], model.tier3[i], state.selected_active_card == (i + 2 * row_cards_active_max) && state.selected_pane == CARDS_PANE);
   }
   doupdate();
 }

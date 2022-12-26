@@ -43,17 +43,21 @@ namespace splendor
     std::vector<WINDOW *> tier2_windows;
     std::vector<WINDOW *> tier3_windows;
     std::vector<PlayerWindowGroup> player_windows;
-    splendor::DisplayState display_state;
+    splendor::DisplayState state;
     void initialize(splendor::Model &model);
     void refresh_display(splendor::Model &model);
+    void interact(splendor::Model &model);
     ~Display();
+  };
+
+  struct CLI
+  {
+    std::optional<splendor::Model> get_model(int ac, char **av);
   };
 
   struct UI
   {
-    splendor::Model model;
     splendor::Display display;
-    UI(int ac, char **av);
-    void interact();
+    splendor::CLI cli;
   };
 }
