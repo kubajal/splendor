@@ -8,7 +8,10 @@
 #define BLUE_CARD 3
 #define BLACK_CARD 4
 #define RED_CARD 5
-#define PLAYER_CARD 255
+#define PLAYER_CARD_TOKENS 252
+#define PLAYER_CARD_CARDS 253
+#define PLAYER_CARD_RESERVED 254
+#define PLAYER_CARD_MAIN 255
 #define TABLE_BACKGROUND 256
 
 namespace splendor
@@ -49,6 +52,7 @@ namespace splendor
     int blue_cards;
     int black_cards;
     int red_cards;
+    std::vector<splendor::Card> reserved_cards;
     int points;
   };
 
@@ -61,9 +65,7 @@ namespace splendor
     int tier1_last_card;
     int tier2_last_card;
     int tier3_last_card;
-    int iteration;
-    int selected;
-    bool is_valid;
+    int active_player;
   };
 
 }
