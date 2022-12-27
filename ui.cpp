@@ -10,11 +10,11 @@ using json = nlohmann::json;
 #define TOKEN_SIZE_Y 3
 #define TOKEN_SIZE_X 7
 
-void player_update_tokens(WINDOW *window, const splendor::TokenDistribution &tokens)
+void player_update_tokens(WINDOW *window, const int tokens[6])
 {
   char buffer[256];
   wclear(window);
-  sprintf(buffer, "\n  TOKENS\n  White: %d\n  Blue:  %d\n  Green: %d\n  Red:   %d\n  Black: %d\n  Joker: %d\n", tokens.white, tokens.blue, tokens.green, tokens.red, tokens.black, tokens.joker);
+  sprintf(buffer, "\n  TOKENS\n  White: %d\n  Blue:  %d\n  Green: %d\n  Red:   %d\n  Black: %d\n  Joker: %d\n", tokens[WHITE], tokens[BLUE], tokens[GREEN], tokens[RED], tokens[BLACK], tokens[JOKER]);
   wprintw(window, buffer);
 }
 
@@ -108,7 +108,7 @@ std::optional<splendor::Model> splendor::CLI::get_model(int ac, char **av)
 
 void splendor::Display::reserve_card(int card_row, int card_column, splendor::Model &model)
 {
-  if (model.players[model.active_player].reserved_cards.size() < model.config.reserved_cards_max && model.tokens.joker > 0)
+  if (model.players[model.active_player].reserved_cards.size() < model.config.reserved_cards_max && model.tokens[JOKER] > 0)
   {
     splendor::Card c = model.active_cards[card_row][card_column];
     model.active_cards[card_row][card_column] = model.card_stack[card_row].back();
@@ -119,8 +119,8 @@ void splendor::Display::reserve_card(int card_row, int card_column, splendor::Mo
     int reserved_cards_number = model.players[model.active_player].reserved_cards.size();
     // draw the reserved card
     draw_card(player_panes[model.active_player].reserved_card_window[reserved_cards_number - 1], c, false);
-    model.players[model.active_player].tokens.joker++;
-    model.tokens.joker--;
+    model.players[model.active_player].tokens[JOKER]++;
+    model.tokens[JOKER]--;
     player_update_tokens(player_panes[model.active_player].tokens_window, model.players[model.active_player].tokens);
   }
 }
@@ -230,9 +230,6 @@ void splendor::Display::initialize(const splendor::Model &model)
   state.selected_active_card = 0;
   state.selected_pane = CARDS_PANE;
   state.selected_reserved_card = 0;
-  state.selected_token_0 = 0;
-  state.selected_token_1 = 0;
-  state.selected_token_2 = 0;
 
   if (!has_colors())
   {
@@ -242,11 +239,12 @@ void splendor::Display::initialize(const splendor::Model &model)
   }
   start_color();
 
-  init_pair(GREEN_CARD, COLOR_BLACK, COLOR_GREEN);
-  init_pair(WHITE_CARD, COLOR_BLACK, COLOR_WHITE);
-  init_pair(BLUE_CARD, COLOR_BLACK, COLOR_BLUE);
-  init_pair(BLACK_CARD, COLOR_WHITE, COLOR_BLACK);
-  init_pair(RED_CARD, COLOR_BLACK, COLOR_RED);
+  init_pair(GREEN, COLOR_BLACK, COLOR_GREEN);
+  init_pair(WHITE, COLOR_BLACK, COLOR_WHITE);
+  init_pair(BLUE, COLOR_BLACK, COLOR_BLUE);
+  init_pair(BLACK, COLOR_WHITE, COLOR_BLACK);
+  init_pair(RED, COLOR_BLACK, COLOR_RED);
+  init_pair(JOKER, COLOR_BLACK, COLOR_YELLOW);
   init_pair(TABLE_BACKGROUND, COLOR_RED, COLOR_CYAN);
   init_pair(PLAYER_CARD_TOKENS, COLOR_BLACK, COLOR_MAGENTA);
   init_pair(PLAYER_CARD_CARDS, COLOR_BLACK, COLOR_CYAN);
@@ -266,42 +264,24 @@ void splendor::Display::initialize(const splendor::Model &model)
   }
 
   char buffer[256];
+  // initialize tokens pane
+  tokens_pane = newwin(CARDS_MAX_Y * (CARD_SIZE_Y + 1) - 1, TOKENS_PANE_SIZE_X, 1, CARDS_MAX_X * (CARD_SIZE_X + 1) + 4);
+  wbkgdset(tokens_pane, COLOR_PAIR(TOKENS_PANE_COLOR));
+  wclear(tokens_pane);
+  wnoutrefresh(tokens_pane);
+  sprintf(buffer, "\n     TOKENS");
+  wprintw(tokens_pane, buffer);
+
   int TOKENS_Y_OFFSET = 4;
   int TOKENS_X_OFFSET = 5;
-  tokens_pane = newwin(CARDS_MAX_Y * (CARD_SIZE_Y + 1) - 1, TOKENS_PANE_SIZE_X, 1, CARDS_MAX_X * (CARD_SIZE_X + 1) + 4);
-  white_tokens_window = derwin(tokens_pane, TOKEN_SIZE_Y, TOKEN_SIZE_X, TOKENS_Y_OFFSET, TOKENS_X_OFFSET);
-  blue_tokens_window = derwin(tokens_pane, TOKEN_SIZE_Y, TOKEN_SIZE_X, TOKENS_Y_OFFSET + (TOKEN_SIZE_Y+1), TOKENS_X_OFFSET);
-  green_tokens_window = derwin(tokens_pane, TOKEN_SIZE_Y, TOKEN_SIZE_X, TOKENS_Y_OFFSET + (TOKEN_SIZE_Y+1)*2, TOKENS_X_OFFSET);
-  red_tokens_window = derwin(tokens_pane, TOKEN_SIZE_Y, TOKEN_SIZE_X, TOKENS_Y_OFFSET + (TOKEN_SIZE_Y+1)*3, TOKENS_X_OFFSET);
-  black_tokens_window = derwin(tokens_pane, TOKEN_SIZE_Y, TOKEN_SIZE_X, TOKENS_Y_OFFSET + (TOKEN_SIZE_Y+1)*4, TOKENS_X_OFFSET);
-  wbkgdset(tokens_pane, COLOR_PAIR(TOKENS_PANE_COLOR));
-  wbkgdset(white_tokens_window, COLOR_PAIR(WHITE_CARD));
-  wbkgdset(blue_tokens_window, COLOR_PAIR(BLUE_CARD));
-  wbkgdset(green_tokens_window, COLOR_PAIR(GREEN_CARD));
-  wbkgdset(red_tokens_window, COLOR_PAIR(RED_CARD));
-  wbkgdset(black_tokens_window, COLOR_PAIR(BLACK_CARD));
-  wclear(tokens_pane);
-  wclear(white_tokens_window);
-  wclear(blue_tokens_window);
-  wclear(green_tokens_window);
-  wclear(red_tokens_window);
-  wclear(black_tokens_window);
-  wnoutrefresh(tokens_pane);
-  wnoutrefresh(white_tokens_window);
-  wnoutrefresh(blue_tokens_window);
-  wnoutrefresh(green_tokens_window);
-  wnoutrefresh(red_tokens_window);
-  wnoutrefresh(black_tokens_window);
-  sprintf(buffer, "\n   %d", model.tokens.white);
-  wprintw(white_tokens_window, buffer);
-  sprintf(buffer, "\n   %d", model.tokens.blue);
-  wprintw(blue_tokens_window, buffer);
-  sprintf(buffer, "\n   %d", model.tokens.green);
-  wprintw(green_tokens_window, buffer);
-  sprintf(buffer, "\n   %d", model.tokens.red);
-  wprintw(red_tokens_window, buffer);
-  sprintf(buffer, "\n   %d", model.tokens.black);
-  wprintw(black_tokens_window, buffer);
+  for(int i = 0; i < 5; i++) {
+    tokens_windows[i] = derwin(tokens_pane, TOKEN_SIZE_Y, TOKEN_SIZE_X, TOKENS_Y_OFFSET + i*(TOKEN_SIZE_Y+1), TOKENS_X_OFFSET);
+    wbkgdset(tokens_windows[i], COLOR_PAIR(i));
+    wclear(tokens_windows[i]);
+    wnoutrefresh(tokens_windows[i]);
+    sprintf(buffer, "\n   %d", model.tokens[i]);
+    wprintw(tokens_windows[i], buffer);
+  }
 
   player_panes.resize(model.players.size());
   for (int i = 0; i < model.players.size(); i++)

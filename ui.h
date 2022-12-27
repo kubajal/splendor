@@ -32,21 +32,17 @@ namespace splendor
   {
     int selected_pane;
     int selected_active_card;
+    int selected_token;
     int selected_reserved_card;
-    int selected_token_0;
-    int selected_token_1;
-    int selected_token_2;
+    bool selected_token_types[5];
+    int selected_tokens_counter;
   };
 
   struct Display
   {
     WINDOW *cards_pane;
     WINDOW *tokens_pane;
-    WINDOW *red_tokens_window;
-    WINDOW *blue_tokens_window;
-    WINDOW *black_tokens_window;
-    WINDOW *white_tokens_window;
-    WINDOW *green_tokens_window;
+    WINDOW *tokens_windows[6];
     WINDOW *card_windows[3][4];
     std::vector<PlayerWindowGroup> player_panes;
     splendor::DisplayState state;
