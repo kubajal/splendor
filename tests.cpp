@@ -1,22 +1,20 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include "splendor.h"
-
-using namespace splendor;
+#include "petri.h"
 
 TEST(TransitionCanFire, ZeroTransitions_CantFire)
 {
-  PetriNet p = {};
+  petri::PetriNet p = {};
   bool t0_can_fire = p.can_fire(0);
   ASSERT_FALSE(t0_can_fire);
 };
 
 TEST(TransitionCanFire, OneTransition_CanFire)
 {
-  splendor::Transition t0 = {
-      std::vector<Edge>{{0, 1}},
-      std::vector<Edge>{{1, 1}}};
-  PetriNet p = {
+  petri::Transition t0 = {
+      std::vector<petri::Edge>{{0, 1}},
+      std::vector<petri::Edge>{{1, 1}}};
+  petri::PetriNet p = {
     {1, 0},
     {t0}
   };
@@ -26,10 +24,10 @@ TEST(TransitionCanFire, OneTransition_CanFire)
 
 TEST(TransitionCanFire, OneTransition_CantFire)
 {
-  splendor::Transition t0 = {
-      std::vector<Edge>{{0, 1}},
-      std::vector<Edge>{{1, 1}}};
-  PetriNet p = {
+  petri::Transition t0 = {
+      std::vector<petri::Edge>{{0, 1}},
+      std::vector<petri::Edge>{{1, 1}}};
+  petri::PetriNet p = {
     {0, 0},
     {t0}
   };
@@ -39,13 +37,13 @@ TEST(TransitionCanFire, OneTransition_CantFire)
 
 TEST(TransitionCanFire, TwoTransitions_FirstCanFire)
 {
-  splendor::Transition t0 = {
-      std::vector<Edge>{{0, 1}},
-      std::vector<Edge>{{1, 1}}};
-  splendor::Transition t1 = {
-      std::vector<Edge>{{1, 1}},
-      std::vector<Edge>{{0, 1}}};
-  PetriNet p = {
+  petri::Transition t0 = {
+      std::vector<petri::Edge>{{0, 1}},
+      std::vector<petri::Edge>{{1, 1}}};
+  petri::Transition t1 = {
+      std::vector<petri::Edge>{{1, 1}},
+      std::vector<petri::Edge>{{0, 1}}};
+  petri::PetriNet p = {
     {0, 1},
     {t0, t1}
   };
@@ -57,13 +55,13 @@ TEST(TransitionCanFire, TwoTransitions_FirstCanFire)
 
 TEST(TransitionCanFire, TwoTransitions_SecondCanFire)
 {
-  splendor::Transition t0 = {
-      std::vector<Edge>{{0, 1}},
-      std::vector<Edge>{{1, 1}}};
-  splendor::Transition t1 = {
-      std::vector<Edge>{{1, 1}},
-      std::vector<Edge>{{0, 1}}};
-  PetriNet p = {
+  petri::Transition t0 = {
+      std::vector<petri::Edge>{{0, 1}},
+      std::vector<petri::Edge>{{1, 1}}};
+  petri::Transition t1 = {
+      std::vector<petri::Edge>{{1, 1}},
+      std::vector<petri::Edge>{{0, 1}}};
+  petri::PetriNet p = {
     {1, 0},
     {t0, t1}
   };
@@ -75,13 +73,13 @@ TEST(TransitionCanFire, TwoTransitions_SecondCanFire)
 
 TEST(TransitionCanFire, TwoTransitions_BothCanFire)
 {
-  splendor::Transition t0 = {
-      std::vector<Edge>{{0, 1}},
-      std::vector<Edge>{{1, 1}}};
-  splendor::Transition t1 = {
-      std::vector<Edge>{{1, 1}},
-      std::vector<Edge>{{0, 1}}};
-  PetriNet p = {
+  petri::Transition t0 = {
+      std::vector<petri::Edge>{{0, 1}},
+      std::vector<petri::Edge>{{1, 1}}};
+  petri::Transition t1 = {
+      std::vector<petri::Edge>{{1, 1}},
+      std::vector<petri::Edge>{{0, 1}}};
+  petri::PetriNet p = {
     {1, 1},
     {t0, t1}
   };
@@ -93,13 +91,13 @@ TEST(TransitionCanFire, TwoTransitions_BothCanFire)
 
 TEST(TransitionCanFire, TwoTransitions_BothCantFire)
 {
-  splendor::Transition t0 = {
-      std::vector<Edge>{{0, 1}},
-      std::vector<Edge>{{1, 1}}};
-  splendor::Transition t1 = {
-      std::vector<Edge>{{1, 1}},
-      std::vector<Edge>{{0, 1}}};
-  PetriNet p = {
+  petri::Transition t0 = {
+      std::vector<petri::Edge>{{0, 1}},
+      std::vector<petri::Edge>{{1, 1}}};
+  petri::Transition t1 = {
+      std::vector<petri::Edge>{{1, 1}},
+      std::vector<petri::Edge>{{0, 1}}};
+  petri::PetriNet p = {
     {0, 0},
     {t0, t1}
   };
@@ -111,10 +109,10 @@ TEST(TransitionCanFire, TwoTransitions_BothCantFire)
 
 TEST(TransitionFire, OneTransition_Simple)
 {
-  splendor::Transition t0 = {
-      std::vector<Edge>{{0, 1}},
-      std::vector<Edge>{{1, 1}}};
-  PetriNet p = {
+  petri::Transition t0 = {
+      std::vector<petri::Edge>{{0, 1}},
+      std::vector<petri::Edge>{{1, 1}}};
+  petri::PetriNet p = {
     {1, 0},
     {t0}
   };
@@ -126,10 +124,10 @@ TEST(TransitionFire, OneTransition_Simple)
 
 TEST(TransitionFire, OneTransition_TwoIncomingEdges)
 {
-  splendor::Transition t0 = {
-      std::vector<Edge>{{0, 5}, {1, 6}},
-      std::vector<Edge>{{2, 7}}};
-  PetriNet p = {
+  petri::Transition t0 = {
+      std::vector<petri::Edge>{{0, 5}, {1, 6}},
+      std::vector<petri::Edge>{{2, 7}}};
+  petri::PetriNet p = {
     {5, 6, 0},
     {t0}
   };
@@ -142,10 +140,10 @@ TEST(TransitionFire, OneTransition_TwoIncomingEdges)
 
 TEST(TransitionFire, OneTransition_TwoOutgoingEdges)
 {
-  splendor::Transition t0 = {
-      std::vector<Edge>{{0, 3}},
-      std::vector<Edge>{{1, 4}, {2, 5}}};
-  PetriNet p = {
+  petri::Transition t0 = {
+      std::vector<petri::Edge>{{0, 3}},
+      std::vector<petri::Edge>{{1, 4}, {2, 5}}};
+  petri::PetriNet p = {
     {3, 0, 0},
     {t0}
   };
@@ -158,10 +156,10 @@ TEST(TransitionFire, OneTransition_TwoOutgoingEdges)
 
 TEST(TransitionFire, OneTransition_TwoIncomingAndTwoOutgoingEdges)
 {
-  splendor::Transition t0 = {
-      std::vector<Edge>{{0, 1}, {1, 2}},
-      std::vector<Edge>{{2, 3}, {3, 4}}};
-  PetriNet p = {
+  petri::Transition t0 = {
+      std::vector<petri::Edge>{{0, 1}, {1, 2}},
+      std::vector<petri::Edge>{{2, 3}, {3, 4}}};
+  petri::PetriNet p = {
     {1, 2, 0, 0},
     {t0}
   };

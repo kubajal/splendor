@@ -10,7 +10,8 @@ using json = nlohmann::json;
 std::optional<splendor::Config> load_default_config(std::string file_path)
 {
   std::ifstream input_stream(file_path);
-  if(input_stream.fail()) {
+  if (input_stream.fail())
+  {
     return {};
   }
   json data = json::parse(input_stream);
@@ -81,17 +82,12 @@ std::optional<splendor::Model> splendor::CLI::get_model(int ac, char **av)
   if (vm.count("help"))
   {
     std::cout << desc;
+    return {};
   }
-  else
-  {
-    auto config = load_default_config(vm["config-path"].as<std::string>());
-    if (config)
-    {
-      auto config_value = config.value();
-      return create_model(config_value);
-    }
-  }
-  return {};
+  auto config_path = vm["config-path"].as<std::string>();
+  return load_default_config(config_path)
+      .transform([](const splendor::Config &c)
+                 { return create_model(c); });
 }
 
 void splendor::Display::interact(splendor::Model &model)
@@ -185,7 +181,7 @@ void update_card(WINDOW *win, const splendor::Card &card, bool selected)
   wnoutrefresh(win);
 }
 
-void splendor::Display::initialize(splendor::Model &model)
+void splendor::Display::initialize(const splendor::Model &model)
 {
   initscr();
   noecho();
@@ -262,9 +258,9 @@ void splendor::Display::initialize(splendor::Model &model)
   // https://linux.die.net/man/3/wrefresh
   doupdate();
   refresh();
- }
+}
 
-void splendor::Display::refresh_display(splendor::Model &model)
+void splendor::Display::refresh_display(const splendor::Model &model)
 {
   switch (state.selected_pane)
   {

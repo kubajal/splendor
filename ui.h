@@ -8,6 +8,8 @@
 #include <random>
 #include <algorithm>
 #include <curses.h>
+#include <optional>
+#include <ranges>
 #include "splendor.h"
 
 #define CARDS_PANE 0
@@ -44,8 +46,8 @@ namespace splendor
     std::vector<WINDOW *> tier3_windows;
     std::vector<PlayerWindowGroup> player_windows;
     splendor::DisplayState state;
-    void initialize(splendor::Model &model);
-    void refresh_display(splendor::Model &model);
+    void initialize(const splendor::Model &model);
+    void refresh_display(const splendor::Model &model);
     void interact(splendor::Model &model);
     ~Display();
   };

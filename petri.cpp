@@ -1,4 +1,4 @@
-#include "splendor.h"
+#include "petri.h"
 #include <ranges>
 #include <algorithm>
 
