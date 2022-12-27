@@ -10,6 +10,7 @@
 #define BLUE_CARD 3
 #define BLACK_CARD 4
 #define RED_CARD 5
+#define TOKENS_PANE_COLOR 251
 #define PLAYER_CARD_TOKENS 252
 #define PLAYER_CARD_CARDS 253
 #define PLAYER_CARD_RESERVED 254
@@ -32,22 +33,25 @@ namespace splendor
 
   struct Config {
     int player_tokens_max;
-    int tokens_on_stack_max;
+    int tokens_on_stack_N;
     int players_N;
     int reserved_cards_max;
     int joker_tokens_N;
     std::vector<splendor::Card> cards;
   };
 
+  struct TokenDistribution {
+    int green;
+    int white;
+    int blue;
+    int black;
+    int red;
+    int joker;
+  };
+
   struct PlayerState {
-    // number of tokens the player has
-    int green_tokens;
-    int white_tokens;
-    int blue_tokens;
-    int black_tokens;
-    int red_tokens;
-    int joker_tokens;
     // number of cards the player bought
+    TokenDistribution tokens;
     int green_cards;
     int white_cards;
     int blue_cards;
@@ -59,12 +63,11 @@ namespace splendor
 
   struct Model {
     Config config;
+    TokenDistribution tokens;
     splendor::Card active_cards[CARDS_MAX_Y][CARDS_MAX_X];
     std::vector<splendor::Card> card_stack[CARDS_MAX_Y];
     std::vector<splendor::PlayerState> players;
-    int tier1_last_card;
-    int tier2_last_card;
-    int tier3_last_card;
+    
     int active_player;
   };
 

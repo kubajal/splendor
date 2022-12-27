@@ -25,7 +25,7 @@ namespace splendor
     WINDOW *tokens_window;
     WINDOW *cards_window;
     WINDOW *reserved_cards_main_window; // groups reserved_cards[]
-    WINDOW *reserved_cards[3];
+    WINDOW *reserved_card_window[3];
   };
 
   struct DisplayState
@@ -42,8 +42,13 @@ namespace splendor
   {
     WINDOW *cards_pane;
     WINDOW *tokens_pane;
+    WINDOW *red_tokens_window;
+    WINDOW *blue_tokens_window;
+    WINDOW *black_tokens_window;
+    WINDOW *white_tokens_window;
+    WINDOW *green_tokens_window;
     WINDOW *card_windows[3][4];
-    std::vector<PlayerWindowGroup> player_windows;
+    std::vector<PlayerWindowGroup> player_panes;
     splendor::DisplayState state;
     void initialize(const splendor::Model &model);
     void refresh_display(const splendor::Model &model);
