@@ -27,6 +27,19 @@ void update_tokens(WINDOW *window, int number)
   wprintw(window, buffer);
 }
 
+int select_available_token(int index, int direction, const splendor::Model &model)
+{
+    index+=direction;
+  while(index >= 0 && index < 5) // exclude joker
+  {
+    if(model.tokens[index] > 0) {
+      return index;
+    }
+    index+=direction;
+  }
+  return -1;
+}
+
 std::optional<splendor::Config> load_default_config(std::string file_path)
 {
   std::ifstream input_stream(file_path);
@@ -160,6 +173,23 @@ void splendor::Display::interact(splendor::Model &model)
       reserve_card(card_row, card_column, model);
       break;
     }
+  case TOKENS_PANE:
+    int index;
+    switch (c)
+    {
+    case KEY_UP:
+      index = select_available_token(state.selected_token, -1, model);
+      if(index != -1) {
+        state.selected_token = index;
+      }
+      break;
+    case KEY_DOWN:
+      index = select_available_token(state.selected_token, +1, model);
+      if(index != -1) {
+        state.selected_token = index;
+      }
+      break;
+    }
   default:
     switch (c)
     {
@@ -236,9 +266,14 @@ void splendor::Display::initialize(const splendor::Model &model)
   keypad(stdscr, TRUE);
   refresh();
 
-  state.selected_active_card = 0;
-  state.selected_pane = CARDS_PANE;
-  state.selected_reserved_card = 0;
+  state = splendor::DisplayState{
+    CARDS_PANE,
+    0,
+    0,
+    0,
+    {0,0,0,0,0},
+    0
+  };
 
   if (!has_colors())
   {
@@ -337,6 +372,11 @@ void splendor::Display::refresh_display(const splendor::Model &model)
     wnoutrefresh(cards_pane);
     box(tokens_pane, ' ', ' ');
     wnoutrefresh(tokens_pane);
+    for (int i = 0; i < 5; i++)
+    {
+      wborder(tokens_windows[i], ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
+      wnoutrefresh(tokens_windows[i]);
+    }
     break;
   case PLAYER_PANE:
     for (int i = 0; i < player_panes.size(); i++)
@@ -355,6 +395,11 @@ void splendor::Display::refresh_display(const splendor::Model &model)
     wnoutrefresh(cards_pane);
     box(tokens_pane, ' ', ' ');
     wnoutrefresh(tokens_pane);
+    for (int i = 0; i < 5; i++)
+    {
+      wborder(tokens_windows[i], ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
+      wnoutrefresh(tokens_windows[i]);
+    }
     break;
   case TOKENS_PANE:
     for (auto &player_window : player_panes)
@@ -367,6 +412,19 @@ void splendor::Display::refresh_display(const splendor::Model &model)
     wnoutrefresh(cards_pane);
     box(tokens_pane, '%', '%');
     wnoutrefresh(tokens_pane);
+    wnoutrefresh(tokens_pane);
+    for (int i = 0; i < 5; i++)
+    {
+      if (i == state.selected_token)
+      {
+        box(tokens_windows[i], '%', '%');
+      }
+      else
+      {
+        wborder(tokens_windows[i], ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
+      }
+      wnoutrefresh(tokens_windows[i]);
+    }
     break;
   }
 
