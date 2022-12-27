@@ -21,7 +21,6 @@ std::optional<splendor::Config> load_default_config(std::string file_path)
       data["players_N"],
       data["reserved_cards_max"],
       data["joker_tokens_N"],
-      data["row_cards_active_max"],
       {}};
   for (const auto &e : data["cards"])
   {
@@ -53,18 +52,26 @@ splendor::Model create_model(const splendor::Config &config)
   auto tier3 = shuffled_cards | std::views::filter([](auto &e)
                                                    { return e.tier == 3; });
 
-  // this is stupid, there is no other way to cast range to vector in C++20
+  auto stack1 = tier1 | std::views::drop(CARDS_MAX_X);
+  auto stack2 = tier2 | std::views::drop(CARDS_MAX_X);
+  auto stack3 = tier3 | std::views::drop(CARDS_MAX_X);
+
+  // this is stupid, there is no other way to cast range to vector in gcc 12
   std::vector<splendor::Card> tier1_v(tier1.begin(), tier1.end());
   std::vector<splendor::Card> tier2_v(tier2.begin(), tier2.end());
   std::vector<splendor::Card> tier3_v(tier3.begin(), tier3.end());
+  std::vector<splendor::Card> stack1_v(stack1.begin(), stack1.end());
+  std::vector<splendor::Card> stack2_v(stack2.begin(), stack2.end());
+  std::vector<splendor::Card> stack3_v(stack3.begin(), stack3.end());
 
   std::vector<splendor::PlayerState> players(config.players_N);
 
   return splendor::Model{
       config,
-      tier1_v,
-      tier2_v,
-      tier3_v,
+      {{tier1_v[0], tier1_v[1], tier1_v[2]},
+       {tier2_v[0], tier2_v[1], tier2_v[2]},
+       {tier3_v[0], tier3_v[1], tier3_v[2]}},
+      {stack1_v, stack2_v, stack3_v},
       players,
       0,
       0,
@@ -90,6 +97,15 @@ std::optional<splendor::Model> splendor::CLI::get_model(int ac, char **av)
                  { return create_model(c); });
 }
 
+void splendor::Display::reserve_card(int card_row, int card_column, splendor::Model &model)
+{
+  // c = model.active_cards[card_row][card_column];
+  // model.tier1.erase(model.tier1.begin() + card_column);
+  // this->draw_card(tier1_windows[card_column], model.tier1[card_column], true);
+  // auto card = get_card();
+  // model.players[model.active_player].reserved_cards.push_back(card);
+}
+
 void splendor::Display::interact(splendor::Model &model)
 {
   int c = getch();
@@ -99,17 +115,22 @@ void splendor::Display::interact(splendor::Model &model)
     switch (c)
     {
     case KEY_UP:
-      state.selected_active_card = std::max(0, state.selected_active_card - model.config.row_cards_active_max);
+      state.selected_active_card = std::max(0, state.selected_active_card - CARDS_MAX_X);
       break;
     case KEY_DOWN:
-      state.selected_active_card = std::min(3 * model.config.row_cards_active_max - 1, state.selected_active_card + model.config.row_cards_active_max);
+      state.selected_active_card = std::min(CARDS_MAX_Y * CARDS_MAX_X - 1, state.selected_active_card + CARDS_MAX_X);
       break;
     case KEY_LEFT:
       state.selected_active_card = std::max(0, state.selected_active_card - 1);
       break;
     case KEY_RIGHT:
-      state.selected_active_card = std::min(3 * model.config.row_cards_active_max - 1, state.selected_active_card + 1);
+      state.selected_active_card = std::min(CARDS_MAX_Y * CARDS_MAX_X - 1, state.selected_active_card + 1);
       break;
+    // case 'r':
+    //   int card_row = state.selected_active_card / CARDS_MAX_X;
+    //   int card_column = state.selected_active_card % CARDS_MAX_X;
+    //   reserve_card(card_row, card_column, model);
+    //   break;
     }
   default:
     switch (c)
@@ -117,11 +138,14 @@ void splendor::Display::interact(splendor::Model &model)
     case '\t':
       state.selected_pane = (state.selected_pane + 1) % 3;
       break;
+    case 'p':
+      model.active_player = (model.active_player + 1) % model.config.players_N;
+      break;
     }
   }
 }
 
-void draw_card(WINDOW *win, const splendor::Card &card, bool selected)
+void splendor::Display::draw_card(WINDOW *win, const splendor::Card &card, bool selected)
 {
   char buffer[256];
   sprintf(buffer, "  Points: %d\n  White:  %d\n  Blue:   %d\n  Green:  %d\n  Red:    %d\n  Black:  %d\n", card.value, card.white, card.blue, card.green, card.red, card.black);
@@ -216,24 +240,24 @@ void splendor::Display::initialize(const splendor::Model &model)
 
   bkgdset(COLOR_PAIR(TABLE_BACKGROUND));
 
-  int row_cards_active_max = model.config.row_cards_active_max;
-
-  tier1_windows.resize(row_cards_active_max);
-  tier2_windows.resize(row_cards_active_max);
-  tier3_windows.resize(row_cards_active_max);
-
-  cards_window = newwin(3 * (CARD_SIZE_Y + 1) + 1, row_cards_active_max * (CARD_SIZE_X + 1) + 3, 0, 0);
-  for (int i = 0; i < row_cards_active_max; i++)
+  cards_pane = newwin(CARDS_MAX_Y * (CARD_SIZE_Y + 1) + 1, CARDS_MAX_X * (CARD_SIZE_X + 1) + 3, 0, 0);
+  for (int i = 0; i < CARDS_MAX_Y; i++)
   {
-    tier1_windows[i] = derwin(cards_window, CARD_SIZE_Y, CARD_SIZE_X, 1, i * (CARD_SIZE_X + 1) + 2);
-    tier2_windows[i] = derwin(cards_window, CARD_SIZE_Y, CARD_SIZE_X, CARD_SIZE_Y + 2, i * (CARD_SIZE_X + 1) + 2);
-    tier3_windows[i] = derwin(cards_window, CARD_SIZE_Y, CARD_SIZE_X, 2 * (CARD_SIZE_Y + 1) + 1, i * (CARD_SIZE_X + 1) + 2);
+    for (int j = 0; j < CARDS_MAX_X; j++)
+    {
+      card_windows[i][j] = derwin(cards_pane, CARD_SIZE_Y, CARD_SIZE_X, i * (CARD_SIZE_Y + 1) + 1, j * (CARD_SIZE_X + 1) + 2);
+    }
   }
+
+  tokens_pane = newwin(CARDS_MAX_Y * (CARD_SIZE_Y + 1) + 1, CARD_SIZE_X, 0, CARDS_MAX_X * (CARD_SIZE_X + 1) + 4);
+  wbkgdset(tokens_pane, COLOR_PAIR(TABLE_BACKGROUND));
+  wclear(tokens_pane);
+  wnoutrefresh(tokens_pane);
 
   player_windows.resize(model.players.size());
   for (int i = 0; i < model.players.size(); i++)
   {
-    player_windows[i].main = newwin(PLAYER_WINDOW_SIZE_Y, PLAYER_WINDOW_SIZE_X, row_cards_active_max * CARD_SIZE_Y + i * (PLAYER_WINDOW_SIZE_Y + 1) - 3, 0);
+    player_windows[i].main = newwin(PLAYER_WINDOW_SIZE_Y, PLAYER_WINDOW_SIZE_X, CARDS_MAX_X * CARD_SIZE_Y + i * (PLAYER_WINDOW_SIZE_Y + 1) - 3, 0);
     player_windows[i].score_window = derwin(player_windows[i].main, PLAYER_WINDOW_SIZE_Y, 2 * (CARD_SIZE_X + 1) + 5, 0, 2);
     player_windows[i].tokens_window = derwin(player_windows[i].score_window, PLAYER_WINDOW_SIZE_Y - 2, CARD_SIZE_X, 1, 0);
     player_windows[i].cards_window = derwin(player_windows[i].score_window, PLAYER_WINDOW_SIZE_Y - 2, CARD_SIZE_X, 1, CARD_SIZE_X + 1);
@@ -246,11 +270,13 @@ void splendor::Display::initialize(const splendor::Model &model)
   {
     draw_player(player_windows[i], model.players[i]);
   }
-  for (int i = 0; i < row_cards_active_max; i++)
+
+  for (int card_row = 0; card_row < CARDS_MAX_Y; card_row++)
   {
-    draw_card(tier1_windows[i], model.tier1[i], state.selected_active_card == i);
-    draw_card(tier2_windows[i], model.tier2[i], state.selected_active_card == (i + row_cards_active_max));
-    draw_card(tier3_windows[i], model.tier3[i], state.selected_active_card == (i + 2 * row_cards_active_max));
+    for (int card_column = 0; card_column < CARDS_MAX_X; card_column++)
+    {
+      draw_card(card_windows[card_row][card_column], model.active_cards[card_row][card_column], state.selected_active_card == card_row * CARDS_MAX_X + card_column && state.selected_pane == CARDS_PANE);
+    }
   }
 
   // draw_card & draw_player call wnoutrefresh
@@ -265,41 +291,69 @@ void splendor::Display::refresh_display(const splendor::Model &model)
   switch (state.selected_pane)
   {
   case CARDS_PANE:
-    wborder(player_windows[model.active_player].main, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
+    for (auto &player_window : player_windows)
+    {
+      wborder(player_window.main, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
+      wnoutrefresh(player_window.main);
+    }
     wnoutrefresh(player_windows[model.active_player].main);
-    box(cards_window, '%', '%');
-    wnoutrefresh(cards_window);
+    box(cards_pane, '%', '%');
+    wnoutrefresh(cards_pane);
+    box(tokens_pane, ' ', ' ');
+    wnoutrefresh(tokens_pane);
     break;
   case PLAYER_PANE:
-    wborder(cards_window, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
-    wnoutrefresh(cards_window);
-    box(player_windows[model.active_player].main, '%', '%');
-    wnoutrefresh(player_windows[model.active_player].main);
+    for (int i = 0; i < player_windows.size(); i++)
+    {
+      if (i == model.active_player)
+      {
+        box(player_windows[i].main, '%', '%');
+      }
+      else
+      {
+        wborder(player_windows[i].main, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
+      }
+      wnoutrefresh(player_windows[i].main);
+    }
+    wborder(cards_pane, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
+    wnoutrefresh(cards_pane);
+    box(tokens_pane, ' ', ' ');
+    wnoutrefresh(tokens_pane);
     break;
   case TOKENS_PANE:
+    for (auto &player_window : player_windows)
+    {
+      wborder(player_window.main, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
+      wnoutrefresh(player_window.main);
+    }
+    wnoutrefresh(player_windows[model.active_player].main);
+    box(cards_pane, ' ', ' ');
+    wnoutrefresh(cards_pane);
+    box(tokens_pane, '%', '%');
+    wnoutrefresh(tokens_pane);
     break;
   }
 
-  int row_cards_active_max = tier1_windows.size();
-  for (int i = 0; i < row_cards_active_max; i++)
+  for (int card_row = 0; card_row < CARDS_MAX_Y; card_row++)
   {
-    update_card(tier1_windows[i], model.tier1[i], state.selected_active_card == i && state.selected_pane == CARDS_PANE);
-    update_card(tier2_windows[i], model.tier2[i], state.selected_active_card == (i + row_cards_active_max) && state.selected_pane == CARDS_PANE);
-    update_card(tier3_windows[i], model.tier3[i], state.selected_active_card == (i + 2 * row_cards_active_max) && state.selected_pane == CARDS_PANE);
+    for (int card_column = 0; card_column < CARDS_MAX_X; card_column++)
+    {
+      update_card(card_windows[card_row][card_column], model.active_cards[card_row][card_column], state.selected_active_card == card_row * CARDS_MAX_X + card_column && state.selected_pane == CARDS_PANE);
+    }
   }
   doupdate();
 }
 
 splendor::Display::~Display()
 {
-  int row_cards_active_max = tier1_windows.size();
-  for (int i = 0; i < row_cards_active_max; i++)
+  for (int i = 0; i < CARDS_MAX_Y; i++)
   {
-    delwin(tier1_windows[i]);
-    delwin(tier2_windows[i]);
-    delwin(tier3_windows[i]);
+    for (int j = 0; j < CARDS_MAX_X; j++)
+    {
+      delwin(card_windows[i][j]);
+    }
   }
-  delwin(cards_window);
+  delwin(cards_pane);
   for (int i = 0; i < player_windows.size(); i++)
   {
     delwin(player_windows[i].cards_window);

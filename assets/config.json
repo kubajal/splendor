@@ -4,7 +4,6 @@
   "players_N": 2,
   "reserved_cards_max": 3,
   "joker_tokens_N": 5,
-  "row_cards_active_max": 4,
   "cards": [
     {"tier": 1, "value": 0, "type": 1, "green": 0, "white": 2, "blue": 1, "black": 0, "red": 0},
     {"tier": 1, "value": 0, "type": 2, "green": 0, "white": 0, "blue": 0, "black": 1, "red": 2},

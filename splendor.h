@@ -2,6 +2,8 @@
 #include <string>
 
 #define MAX_PLACES 100
+#define CARDS_MAX_X 4
+#define CARDS_MAX_Y 3
 
 #define GREEN_CARD 1
 #define WHITE_CARD 2
@@ -34,7 +36,6 @@ namespace splendor
     int players_N;
     int reserved_cards_max;
     int joker_tokens_N;
-    int row_cards_active_max;
     std::vector<splendor::Card> cards;
   };
 
@@ -58,9 +59,8 @@ namespace splendor
 
   struct Model {
     Config config;
-    std::vector<splendor::Card> tier1;
-    std::vector<splendor::Card> tier2;
-    std::vector<splendor::Card> tier3;
+    splendor::Card active_cards[CARDS_MAX_Y][CARDS_MAX_X];
+    std::vector<splendor::Card> card_stack[CARDS_MAX_Y];
     std::vector<splendor::PlayerState> players;
     int tier1_last_card;
     int tier2_last_card;

@@ -40,15 +40,16 @@ namespace splendor
 
   struct Display
   {
-    WINDOW *cards_window;
-    std::vector<WINDOW *> tier1_windows;
-    std::vector<WINDOW *> tier2_windows;
-    std::vector<WINDOW *> tier3_windows;
+    WINDOW *cards_pane;
+    WINDOW *tokens_pane;
+    WINDOW *card_windows[3][4];
     std::vector<PlayerWindowGroup> player_windows;
     splendor::DisplayState state;
     void initialize(const splendor::Model &model);
     void refresh_display(const splendor::Model &model);
+    void reserve_card(int card_row, int card_column, splendor::Model &model);
     void interact(splendor::Model &model);
+    void draw_card(WINDOW *win, const splendor::Card &card, bool selected);
     ~Display();
   };
 
