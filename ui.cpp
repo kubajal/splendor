@@ -29,13 +29,14 @@ void update_tokens(WINDOW *window, int number)
 
 int select_available_token(int index, int direction, const splendor::Model &model)
 {
-    index+=direction;
-  while(index >= 0 && index < 5) // exclude joker
+  index += direction;
+  while (index >= 0 && index < 5) // exclude joker
   {
-    if(model.tokens[index] > 0) {
+    if (model.tokens[index] > 0)
+    {
       return index;
     }
-    index+=direction;
+    index += direction;
   }
   return -1;
 }
@@ -179,13 +180,15 @@ void splendor::Display::interact(splendor::Model &model)
     {
     case KEY_UP:
       index = select_available_token(state.selected_token, -1, model);
-      if(index != -1) {
+      if (index != -1)
+      {
         state.selected_token = index;
       }
       break;
     case KEY_DOWN:
       index = select_available_token(state.selected_token, +1, model);
-      if(index != -1) {
+      if (index != -1)
+      {
         state.selected_token = index;
       }
       break;
@@ -267,13 +270,12 @@ void splendor::Display::initialize(const splendor::Model &model)
   refresh();
 
   state = splendor::DisplayState{
-    CARDS_PANE,
-    0,
-    0,
-    0,
-    {0,0,0,0,0},
-    0
-  };
+      CARDS_PANE,
+      0,
+      0,
+      0,
+      {0, 0, 0, 0, 0},
+      0};
 
   if (!has_colors())
   {
@@ -359,72 +361,52 @@ void splendor::Display::initialize(const splendor::Model &model)
 
 void splendor::Display::refresh_display(const splendor::Model &model)
 {
+  // reset all selections
+  box(cards_pane, ' ', ' ');
+  for (auto &card_windows_inner : card_windows)
+  {
+    for (auto &card_window : card_windows_inner)
+    {
+      wborder(card_window, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
+      wnoutrefresh(card_window);
+    }
+  }
+  for (auto &player_window : player_panes)
+  {
+    wborder(player_window.main, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
+    wnoutrefresh(player_window.main);
+  }
+  wnoutrefresh(cards_pane);
+  box(tokens_pane, ' ', ' ');
+  wnoutrefresh(tokens_pane);
+  for (auto &token_window : tokens_windows)
+  {
+    wborder(token_window, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
+    wnoutrefresh(token_window);
+  }
+
+  int card_row = state.selected_active_card / CARDS_MAX_X;
+  int card_column = state.selected_active_card % CARDS_MAX_X;
+  // select only relevant windows
   switch (state.selected_pane)
   {
   case CARDS_PANE:
-    for (auto &player_window : player_panes)
-    {
-      wborder(player_window.main, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
-      wnoutrefresh(player_window.main);
-    }
-    wnoutrefresh(player_panes[model.active_player].main);
     box(cards_pane, '%', '%');
     wnoutrefresh(cards_pane);
-    box(tokens_pane, ' ', ' ');
-    wnoutrefresh(tokens_pane);
-    for (int i = 0; i < 5; i++)
-    {
-      wborder(tokens_windows[i], ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
-      wnoutrefresh(tokens_windows[i]);
-    }
+    box(card_windows[card_row][card_column], '%', '%');
+    wnoutrefresh(card_windows[card_row][card_column]);
     break;
   case PLAYER_PANE:
-    for (int i = 0; i < player_panes.size(); i++)
-    {
-      if (i == model.active_player)
-      {
-        box(player_panes[i].main, '%', '%');
-      }
-      else
-      {
-        wborder(player_panes[i].main, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
-      }
-      wnoutrefresh(player_panes[i].main);
-    }
-    wborder(cards_pane, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
-    wnoutrefresh(cards_pane);
-    box(tokens_pane, ' ', ' ');
-    wnoutrefresh(tokens_pane);
-    for (int i = 0; i < 5; i++)
-    {
-      wborder(tokens_windows[i], ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
-      wnoutrefresh(tokens_windows[i]);
-    }
+    box(player_panes[model.active_player].main, '%', '%');
+    wnoutrefresh(player_panes[model.active_player].main);
     break;
   case TOKENS_PANE:
-    for (auto &player_window : player_panes)
-    {
-      wborder(player_window.main, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
-      wnoutrefresh(player_window.main);
-    }
-    wnoutrefresh(player_panes[model.active_player].main);
-    box(cards_pane, ' ', ' ');
-    wnoutrefresh(cards_pane);
     box(tokens_pane, '%', '%');
     wnoutrefresh(tokens_pane);
-    wnoutrefresh(tokens_pane);
-    for (int i = 0; i < 5; i++)
-    {
-      if (i == state.selected_token)
-      {
-        box(tokens_windows[i], '%', '%');
-      }
-      else
-      {
-        wborder(tokens_windows[i], ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
-      }
-      wnoutrefresh(tokens_windows[i]);
-    }
+    box(tokens_windows[state.selected_token], '%', '%');
+    wnoutrefresh(tokens_windows[state.selected_token]);
+    break;
+  default:
     break;
   }
 
