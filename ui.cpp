@@ -192,6 +192,38 @@ void splendor::Display::interact(splendor::Model &model)
         state.selected_token = index;
       }
       break;
+    case 's':
+      switch (state.selected_tokens_counter)
+      {
+      case 0:
+      case 1:
+        state.selected_token_types[state.selected_token]++;
+        state.selected_tokens_counter++;
+        break;
+      case 2:
+        for (int i = 0; i < 5; i++)
+        {
+          if (state.selected_token_types[i] == 2)
+          {
+            return;
+          }
+        }
+        if(state.selected_token_types[state.selected_token] == 0)
+        {
+          state.selected_token_types[state.selected_token]++;
+          state.selected_tokens_counter++;
+        }
+        break;
+      default:
+        break;
+      }
+      break;
+    case 'd':
+      if (state.selected_token_types[state.selected_token] > 0)
+      {
+        state.selected_tokens_counter--;
+        state.selected_token_types[state.selected_token]--;
+      }
     }
   default:
     switch (c)
@@ -274,7 +306,7 @@ void splendor::Display::initialize(const splendor::Model &model)
       0,
       0,
       0,
-      {0, 0, 0, 0, 0},
+      {false, false, false, false, false},
       0};
 
   if (!has_colors())
@@ -387,28 +419,63 @@ void splendor::Display::refresh_display(const splendor::Model &model)
 
   int card_row = state.selected_active_card / CARDS_MAX_X;
   int card_column = state.selected_active_card % CARDS_MAX_X;
-  // select only relevant windows
-  switch (state.selected_pane)
-  {
-  case CARDS_PANE:
-    box(cards_pane, '%', '%');
-    wnoutrefresh(cards_pane);
-    box(card_windows[card_row][card_column], '%', '%');
-    wnoutrefresh(card_windows[card_row][card_column]);
-    break;
-  case PLAYER_PANE:
-    box(player_panes[model.active_player].main, '%', '%');
-    wnoutrefresh(player_panes[model.active_player].main);
-    break;
-  case TOKENS_PANE:
-    box(tokens_pane, '%', '%');
-    wnoutrefresh(tokens_pane);
-    box(tokens_windows[state.selected_token], '%', '%');
-    wnoutrefresh(tokens_windows[state.selected_token]);
-    break;
-  default:
-    break;
-  }
+
+  // set only relevant selections
+  switch(state.selected_pane)
+    {
+    case CARDS_PANE:
+      box(cards_pane, '%', '%');
+      wnoutrefresh(cards_pane);
+      box(card_windows[card_row][card_column], '%', '%');
+      wnoutrefresh(card_windows[card_row][card_column]);
+      break;
+    case PLAYER_PANE:
+      box(player_panes[model.active_player].main, '%', '%');
+      wnoutrefresh(player_panes[model.active_player].main);
+      break;
+    case TOKENS_PANE:
+      box(tokens_pane, '%', '%');
+      wnoutrefresh(tokens_pane);
+      box(tokens_windows[state.selected_token], '%', '%');
+      wnoutrefresh(tokens_windows[state.selected_token]);
+      for (int i = 0; i < 5; i++)
+      {
+        if (state.selected_token_types[i] != 0 && i == state.selected_token)
+        {
+          if(state.selected_token_types[i] == 1)
+          {
+            box(tokens_windows[i], '1', 'o');
+          }
+          else if(state.selected_token_types[i] == 2)
+          {
+            box(tokens_windows[i], '2', 'o');
+          }
+        }
+        else if (state.selected_token_types[i] != 0 && i != state.selected_token)
+        {
+          if(state.selected_token_types[i] == 1)
+          {
+            box(tokens_windows[i], '1', '1');
+          }
+          else if(state.selected_token_types[i] == 2)
+          {
+            box(tokens_windows[i], '2', '2');
+          }
+        }
+        else if (state.selected_token_types[i] == 0 && i == state.selected_token)
+        {
+          box(tokens_windows[i], '*', '*');
+        }
+        else
+        {
+          box(tokens_windows[i], ' ', ' ');
+        }
+        wnoutrefresh(tokens_windows[i]);
+      }
+      break;
+    default:
+      break;
+    }
 
   for (int card_row = 0; card_row < CARDS_MAX_Y; card_row++)
   {
@@ -417,14 +484,6 @@ void splendor::Display::refresh_display(const splendor::Model &model)
       update_card(card_windows[card_row][card_column], model.active_cards[card_row][card_column], state.selected_active_card == card_row * CARDS_MAX_X + card_column && state.selected_pane == CARDS_PANE);
     }
   }
-
-  // for (int player_id = 0; player_id < model.players.size(); player_id++)
-  // {
-  //   for (int reserved_card_slot_id = 0; reserved_card_slot_id < model.players[player_id].reserved_cards.size(); reserved_card_slot_id++)
-  //   {
-  //     draw_card(player_panes[player_id].reserved_card_window[reserved_card_slot_id], model.players[player_id].reserved_cards[reserved_card_slot_id], state.selected_reserved_card == reserved_card_slot_id && state.selected_pane == PLAYER_PANE);
-  //   }
-  // }
 
   doupdate();
 }
