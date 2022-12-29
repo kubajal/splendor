@@ -10,21 +10,30 @@ using json = nlohmann::json;
 #define TOKEN_SIZE_Y 3
 #define TOKEN_SIZE_X 7
 
-void update_player_tokens(WINDOW *window, const int tokens[6])
+void set_player_tokens(WINDOW *window, const char tokens[6])
 {
   char buffer[256];
   wclear(window);
   sprintf(buffer, "\n  TOKENS\n  White: %d\n  Blue:  %d\n  Green: %d\n  Red:   %d\n  Black: %d\n  Joker: %d\n", tokens[WHITE], tokens[BLUE], tokens[GREEN], tokens[RED], tokens[BLACK], tokens[JOKER]);
   wprintw(window, buffer);
+  wnoutrefresh(window);
 }
 
-void update_tokens(WINDOW *window, int number)
+void update_tokens_window(WINDOW *window, int number)
 {
   char buffer[256];
   wclear(window);
-  wnoutrefresh(window);
   sprintf(buffer, "\n   %d", number);
   wprintw(window, buffer);
+  wnoutrefresh(window);
+}
+
+void splendor::Display::update_tokens_pane(const int _tokens[6])
+{
+  for(int i = 0; i < 6; i++)
+  {
+    update_tokens_window(tokens_windows[i], _tokens[i]);
+  }
 }
 
 int select_available_token(int index, int direction, const splendor::Model &model)
@@ -40,6 +49,19 @@ int select_available_token(int index, int direction, const splendor::Model &mode
   }
   return -1;
 }
+
+int splendor::DisplayState::get_number_of_selected_token_types()
+{
+  int counter = 0;
+  for (int i = 0; i < 5; i++)
+  {
+    if (selected_token_types[i] > 0)
+    {
+      counter++;
+    }
+  }
+  return counter;
+};
 
 std::optional<splendor::Config> load_default_config(std::string file_path)
 {
@@ -143,13 +165,14 @@ void splendor::Display::reserve_card(int card_row, int card_column, splendor::Mo
     draw_card(player_panes[model.active_player].reserved_card_window[reserved_cards_number - 1], c, false);
     model.players[model.active_player].tokens[JOKER]++;
     model.tokens[JOKER]--;
-    update_player_tokens(player_panes[model.active_player].tokens_window, model.players[model.active_player].tokens);
-    update_tokens(tokens_windows[JOKER], model.tokens[JOKER]);
+    set_player_tokens(player_panes[model.active_player].tokens_window, model.players[model.active_player].tokens);
+    update_tokens_window(tokens_windows[JOKER], model.tokens[JOKER]);
   }
 }
 
 void splendor::Display::interact(splendor::Model &model)
 {
+  int number_of_selected_token_types;
   int c = getch();
   switch (state.selected_pane)
   {
@@ -178,6 +201,26 @@ void splendor::Display::interact(splendor::Model &model)
     int index;
     switch (c)
     {
+    case 't':
+      if(state.get_number_of_selected_token_types() == 1 && state.selected_tokens_counter == 2
+      || state.get_number_of_selected_token_types() == 3 && state.selected_tokens_counter == 3)
+      {
+        model.players[model.active_player].modify_tokens(state.selected_token_types, +1);
+        model.modify_tokens(state.selected_token_types, -1);
+        for(int i = 0; i < 6; i++)
+        {
+          state.selected_token_types[i] = 0;
+        }
+        state.selected_tokens_counter = 0;
+      }
+      
+      // refresh token counts
+      for(int i = 0; i < model.players.size(); i++)
+      {
+        set_player_tokens(player_panes[i].tokens_window, model.players[i].tokens);
+      }
+      update_tokens_pane(model.tokens);
+      break;
     case KEY_UP:
       index = select_available_token(state.selected_token, -1, model);
       if (index != -1)
@@ -201,14 +244,7 @@ void splendor::Display::interact(splendor::Model &model)
         state.selected_tokens_counter++;
         break;
       case 2:
-        for (int i = 0; i < 5; i++)
-        {
-          if (state.selected_token_types[i] == 2)
-          {
-            return;
-          }
-        }
-        if(state.selected_token_types[state.selected_token] == 0)
+        if(state.get_number_of_selected_token_types() == 2 && state.selected_token_types[state.selected_token] == 0)
         {
           state.selected_token_types[state.selected_token]++;
           state.selected_tokens_counter++;
@@ -224,6 +260,7 @@ void splendor::Display::interact(splendor::Model &model)
         state.selected_tokens_counter--;
         state.selected_token_types[state.selected_token]--;
       }
+      break;
     }
   default:
     switch (c)
@@ -268,17 +305,16 @@ void draw_player(splendor::PlayerWindowGroup &window_group, const splendor::Play
   wclear(window_group.reserved_card_window[0]);
   wclear(window_group.reserved_card_window[1]);
   wclear(window_group.reserved_card_window[2]);
-  update_player_tokens(window_group.tokens_window, player.tokens);
   sprintf(buffer, "\n  CARDS\n  White: %d\n  Blue:  %d\n  Green: %d\n  Red:   %d\n  Black: %d\n", player.white_cards, player.blue_cards, player.green_cards, player.red_cards, player.black_cards);
   wprintw(window_group.cards_window, buffer);
   box(window_group.reserved_cards_main_window, 'z', 'z');
   wnoutrefresh(window_group.main);
-  wnoutrefresh(window_group.tokens_window);
   wnoutrefresh(window_group.cards_window);
   wnoutrefresh(window_group.reserved_cards_main_window);
   wnoutrefresh(window_group.reserved_card_window[0]);
   wnoutrefresh(window_group.reserved_card_window[1]);
   wnoutrefresh(window_group.reserved_card_window[2]);
+  set_player_tokens(window_group.tokens_window, player.tokens);
 }
 
 void update_card(WINDOW *win, const splendor::Card &card, bool selected)
@@ -356,7 +392,6 @@ void splendor::Display::initialize(const splendor::Model &model)
   {
     tokens_windows[i] = derwin(tokens_pane, TOKEN_SIZE_Y, TOKEN_SIZE_X, TOKENS_Y_OFFSET + i * (TOKEN_SIZE_Y + 1), TOKENS_X_OFFSET);
     wbkgdset(tokens_windows[i], COLOR_PAIR(i));
-    update_tokens(tokens_windows[i], model.tokens[i]);
   }
 
   player_panes.resize(model.players.size());
@@ -383,6 +418,13 @@ void splendor::Display::initialize(const splendor::Model &model)
       draw_card(card_windows[card_row][card_column], model.active_cards[card_row][card_column], state.selected_active_card == card_row * CARDS_MAX_X + card_column && state.selected_pane == CARDS_PANE);
     }
   }
+  
+  // refresh token counts
+  for(int i = 0; i < model.players.size(); i++)
+  {
+    set_player_tokens(player_panes[i].tokens_window, model.players[i].tokens);
+  }
+  update_tokens_pane(model.tokens);
 
   // draw_card & draw_player call wnoutrefresh
   // this finalizes drawing to the screen
@@ -393,7 +435,7 @@ void splendor::Display::initialize(const splendor::Model &model)
 
 void splendor::Display::refresh_display(const splendor::Model &model)
 {
-  // reset all selections
+  // reset all pane selections
   box(cards_pane, ' ', ' ');
   for (auto &card_windows_inner : card_windows)
   {
@@ -420,7 +462,7 @@ void splendor::Display::refresh_display(const splendor::Model &model)
   int card_row = state.selected_active_card / CARDS_MAX_X;
   int card_column = state.selected_active_card % CARDS_MAX_X;
 
-  // set only relevant selections
+  // set only relevant pane selections
   switch(state.selected_pane)
     {
     case CARDS_PANE:

@@ -43,5 +43,7 @@ add_executable(
   main.cpp
   ui.h
   ui.cpp
+  splendor.h
+  splendor.cpp
 )
 target_link_libraries(splendor PRIVATE nlohmann_json::nlohmann_json ${Boost_LIBRARIES} ${CURSES_LIBRARIES})

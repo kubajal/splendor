@@ -8,10 +8,11 @@ int main(int ac, char **av)
     .transform([&ui](splendor::Model model)
     {
       ui.display.initialize(model);
+      ui.display.refresh_display(model);
       while (true)
       {
-        ui.display.refresh_display(model);
         ui.display.interact(model);
+        ui.display.refresh_display(model);
       }
       return model;
     });

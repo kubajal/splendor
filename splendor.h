@@ -44,7 +44,7 @@ namespace splendor
 
   struct PlayerState {
     // number of cards the player bought
-    int tokens[6]; // 0=white, 1=blue, 2=green, 3=red, 4=black, 5=joker
+    char tokens[6]; // 0=white, 1=blue, 2=green, 3=red, 4=black, 5=joker
     int green_cards;
     int white_cards;
     int blue_cards;
@@ -52,6 +52,7 @@ namespace splendor
     int red_cards;
     std::vector<splendor::Card> reserved_cards;
     int points;
+    void modify_tokens(const char _tokens[6], int direction);
   };
 
   struct Model {
@@ -60,8 +61,8 @@ namespace splendor
     splendor::Card active_cards[CARDS_MAX_Y][CARDS_MAX_X];
     std::vector<splendor::Card> card_stack[CARDS_MAX_Y];
     std::vector<splendor::PlayerState> players;
-    
     int active_player;
+    void modify_tokens(const char tokens[6], int direction);
   };
 
 }
