@@ -34,7 +34,7 @@ namespace splendor
     int selected_active_card;
     int selected_token;
     int selected_reserved_card;
-    char selected_token_types[6];
+    int selected_token_types[6];
     int selected_tokens_counter;
     int get_number_of_selected_token_types();
   };

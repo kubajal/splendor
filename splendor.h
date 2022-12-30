@@ -26,11 +26,7 @@ namespace splendor
     int tier;
     int value;
     int type;
-    int green;
-    int white;
-    int blue;
-    int black;
-    int red;
+    int tokens[6]; // 0=white, 1=blue, 2=green, 3=red, 4=black, 5=joker
   };
 
   struct Config {
@@ -44,15 +40,14 @@ namespace splendor
 
   struct PlayerState {
     // number of cards the player bought
-    char tokens[6]; // 0=white, 1=blue, 2=green, 3=red, 4=black, 5=joker
-    int green_cards;
-    int white_cards;
-    int blue_cards;
-    int black_cards;
-    int red_cards;
+    int tokens[6]; // 0=white, 1=blue, 2=green, 3=red, 4=black, 5=joker
+    int cards[6]; // 0=white, 1=blue, 2=green, 3=red, 4=black, 5=unused
     std::vector<splendor::Card> reserved_cards;
     int points;
-    void modify_tokens(const char _tokens[6], int direction);
+    void modify_tokens(int _tokens[6], int direction);
+    bool can_afford_card(int _tokens[6]);
+    int *get_cost(int _tokens[6]);
+    void increase_card_color(int color);
   };
 
   struct Model {
@@ -62,7 +57,8 @@ namespace splendor
     std::vector<splendor::Card> card_stack[CARDS_MAX_Y];
     std::vector<splendor::PlayerState> players;
     int active_player;
-    void modify_tokens(const char tokens[6], int direction);
+    void modify_tokens(int tokens[6], int direction);
+    splendor::Card &get_card(int card_id);
   };
 
 }
