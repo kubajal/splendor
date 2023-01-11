@@ -52,7 +52,7 @@ namespace splendor
     void reserve_card(int card_row, int card_column, splendor::Model &model);
     void interact(splendor::Model &model);
     void draw_card(WINDOW *win, const splendor::Card &card, bool selected);
-    void update_tokens_pane(const int _tokens[6]);
+    void set_model_tokens(const int _tokens[6]);
     ~Display();
   };
 

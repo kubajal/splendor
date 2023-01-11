@@ -37,7 +37,28 @@ void update_tokens_window(WINDOW *window, int number)
   wnoutrefresh(window);
 }
 
-void splendor::Display::update_tokens_pane(const int _tokens[6])
+void draw_player(splendor::PlayerWindowGroup &window_group, const splendor::PlayerState &player)
+{
+  char buffer[256];
+  wbkgdset(window_group.main, COLOR_PAIR(PLAYER_CARD_CARDS));
+  wbkgdset(window_group.tokens_window, COLOR_PAIR(PLAYER_CARD_CARDS));
+  wbkgdset(window_group.cards_window, COLOR_PAIR(PLAYER_CARD_CARDS));
+  wclear(window_group.main);
+  wclear(window_group.reserved_cards_main_window);
+  wclear(window_group.reserved_card_window[0]);
+  wclear(window_group.reserved_card_window[1]);
+  wclear(window_group.reserved_card_window[2]);
+  box(window_group.reserved_cards_main_window, 'z', 'z');
+  wnoutrefresh(window_group.main);
+  wnoutrefresh(window_group.reserved_cards_main_window);
+  wnoutrefresh(window_group.reserved_card_window[0]);
+  wnoutrefresh(window_group.reserved_card_window[1]);
+  wnoutrefresh(window_group.reserved_card_window[2]);
+  set_player_tokens(window_group.tokens_window, player);
+  set_player_score(window_group.cards_window, player);
+}
+
+void splendor::Display::set_model_tokens(const int _tokens[6])
 {
   for (int i = 0; i < 6; i++)
   {
@@ -72,7 +93,32 @@ int splendor::DisplayState::get_number_of_selected_token_types()
   return counter;
 };
 
-std::optional<splendor::Config> load_default_config(std::string &file_path)
+int get_type(const std::string &string)
+{
+  if(string == "White")
+  {
+    return WHITE;
+  }
+  if(string == "Blue")
+  {
+    return BLUE;
+  }
+  if(string == "Green")
+  {
+    return GREEN;
+  }
+  if(string == "Black")
+  {
+    return BLACK;
+  }
+  if(string == "Red")
+  {
+    return RED;
+  }
+  return -1;
+}
+
+std::optional<splendor::Config> load_default_config(const std::string &file_path)
 {
   std::ifstream input_stream(file_path);
   if (input_stream.fail())
@@ -92,7 +138,7 @@ std::optional<splendor::Config> load_default_config(std::string &file_path)
     config.cards.push_back({
         e["tier"],
         e["value"],
-        e["type"],
+        get_type(e["type"].get<std::string>()),
         e["green"],
         e["white"],
         e["blue"],
@@ -179,6 +225,14 @@ void splendor::Display::reserve_card(int card_row, int card_column, splendor::Mo
   }
 }
 
+void buy_card(splendor::Model &model, splendor::Card &card, splendor::PlayerState &player)
+{
+  auto cost = player.get_cost(card.tokens);
+  player.modify_tokens(cost, -1);
+  player.increase_card_color(card.type);
+  model.modify_tokens(cost, +1);
+}
+
 void splendor::Display::interact(splendor::Model &model)
 {
   int number_of_selected_token_types;
@@ -190,22 +244,19 @@ void splendor::Display::interact(splendor::Model &model)
     {
     case 'b':
     {
-      auto card = model.get_card(state.selected_active_card);
+      auto card = model.get_active_card(state.selected_active_card);
       splendor::PlayerState &player = model.players[model.active_player];
       int card_row = state.selected_active_card / CARDS_MAX_X;
       int card_column = state.selected_active_card % CARDS_MAX_X;
       if (model.players[model.active_player].can_afford_card(card.tokens))
       {
-        auto cost = player.get_cost(card.tokens);
-        player.modify_tokens(cost, -1);
-        player.increase_card_color(card.type);
-        model.modify_tokens(cost, +1);
+        buy_card(model, card, player);
         model.active_cards[card_row][card_column] = model.card_stack[card_row].back();
         model.card_stack[card_row].pop_back();
         draw_card(card_windows[card_row][card_column], model.active_cards[card_row][card_column], true);
         set_player_score(player_panes[model.active_player].cards_window, player);
         set_player_tokens(player_panes[model.active_player].tokens_window, player);
-        update_tokens_pane(model.tokens);
+        set_model_tokens(model.tokens);
       }
       break;
     }
@@ -234,9 +285,26 @@ void splendor::Display::interact(splendor::Model &model)
       state.selected_reserved_card = std::max(0, state.selected_reserved_card - 1);
       break;
     case KEY_RIGHT:
+    {
       int reserved_cards_number = model.players[model.active_player].reserved_cards.size() - 1;
       state.selected_reserved_card = std::min(reserved_cards_number, state.selected_reserved_card + 1);
       break;
+    }
+    case 'b':
+    {
+      auto card = model.players[model.active_player].reserved_cards[state.selected_reserved_card];
+      splendor::PlayerState &player = model.players[model.active_player];
+      if (player.can_afford_card(card.tokens))
+      {
+        buy_card(model, card, player);
+        player.reserved_cards.erase(player.reserved_cards.begin() + state.selected_reserved_card);
+        draw_player(player_panes[model.active_player], player);
+        set_player_score(player_panes[model.active_player].cards_window, player);
+        set_player_tokens(player_panes[model.active_player].tokens_window, player);
+        set_model_tokens(model.tokens);
+      }
+      break;
+    }
     }
   case TOKENS_PANE:
     int index;
@@ -259,7 +327,7 @@ void splendor::Display::interact(splendor::Model &model)
       {
         set_player_tokens(player_panes[i].tokens_window, model.players[i]);
       }
-      update_tokens_pane(model.tokens);
+      set_model_tokens(model.tokens);
       break;
     case KEY_UP:
       index = select_available_token(state.selected_token, -1, model);
@@ -331,27 +399,6 @@ void splendor::Display::draw_card(WINDOW *win, const splendor::Card &card, bool 
     box(win, '|', '-');
   }
   wnoutrefresh(win);
-}
-
-void draw_player(splendor::PlayerWindowGroup &window_group, const splendor::PlayerState &player)
-{
-  char buffer[256];
-  wbkgdset(window_group.main, COLOR_PAIR(PLAYER_CARD_CARDS));
-  wbkgdset(window_group.tokens_window, COLOR_PAIR(PLAYER_CARD_CARDS));
-  wbkgdset(window_group.cards_window, COLOR_PAIR(PLAYER_CARD_CARDS));
-  wclear(window_group.main);
-  wclear(window_group.reserved_cards_main_window);
-  wclear(window_group.reserved_card_window[0]);
-  wclear(window_group.reserved_card_window[1]);
-  wclear(window_group.reserved_card_window[2]);
-  box(window_group.reserved_cards_main_window, 'z', 'z');
-  wnoutrefresh(window_group.main);
-  wnoutrefresh(window_group.reserved_cards_main_window);
-  wnoutrefresh(window_group.reserved_card_window[0]);
-  wnoutrefresh(window_group.reserved_card_window[1]);
-  wnoutrefresh(window_group.reserved_card_window[2]);
-  set_player_tokens(window_group.tokens_window, player);
-  set_player_score(window_group.cards_window, player);
 }
 
 void update_card(WINDOW *win, const splendor::Card &card, bool selected)
@@ -461,7 +508,7 @@ void splendor::Display::initialize(const splendor::Model &model)
   {
     set_player_tokens(player_panes[i].tokens_window, model.players[i]);
   }
-  update_tokens_pane(model.tokens);
+  set_model_tokens(model.tokens);
 
   // draw_card & draw_player call wnoutrefresh
   // this finalizes drawing to the screen

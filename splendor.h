@@ -58,7 +58,7 @@ namespace splendor
     std::vector<splendor::PlayerState> players;
     int active_player;
     void modify_tokens(int tokens[6], int direction);
-    splendor::Card &get_card(int card_id);
+    splendor::Card &get_active_card(int card_id);
   };
 
 }

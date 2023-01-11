@@ -42,7 +42,7 @@ namespace splendor
     return _tokens;
   }
 
-  splendor::Card &splendor::Model::get_card(int card_id)
+  splendor::Card &splendor::Model::get_active_card(int card_id)
   {
     int card_row = card_id / CARDS_MAX_X;   
     int card_column = card_id % CARDS_MAX_X;
