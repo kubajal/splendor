@@ -189,10 +189,14 @@ splendor::Model create_model(const splendor::Config &config)
 
 std::optional<splendor::Model> splendor::CLI::get_model(int ac, char **av)
 {
-  po::options_description desc("Allowed options");
-  desc.add_options()("help", "produce help message")("config-path", po::value<std::string>()->default_value("assets/config.json"), "path to Splendor config");
   po::variables_map vm;
-  po::store(po::parse_command_line(ac, av, desc), vm);
+  po::options_description desc("Allowed options");
+
+  desc.add_options()
+    ("help", "produce help message")
+    ("config-path", po::value<std::string>()->default_value("assets/config.json"), "path to Splendor config");
+  auto parsedOptions = po::parse_command_line(ac, av, desc);
+  po::store(parsedOptions, vm);
   po::notify(vm);
   if (vm.count("help"))
   {

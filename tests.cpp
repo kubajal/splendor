@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include "petri.h"
+#include "ui.h"
 
 TEST(TransitionCanFire, ZeroTransitions_CantFire)
 {
@@ -169,4 +170,16 @@ TEST(TransitionFire, OneTransition_TwoIncomingAndTwoOutgoingEdges)
   ASSERT_EQ(p.tokens[1], 0);
   ASSERT_EQ(p.tokens[2], 3);
   ASSERT_EQ(p.tokens[3], 4);
+};
+
+
+TEST(UITest, ConfigParsing)
+{
+  splendor::UI ui;
+  char **x = new char*;
+  auto optionalModel = ui.cli
+    .get_model(0, x);
+  ASSERT_TRUE(optionalModel.has_value());
+  auto model = optionalModel.value();
+  ASSERT_EQ(model.players.size(), 2);
 };
