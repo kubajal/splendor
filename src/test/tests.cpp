@@ -172,14 +172,27 @@ TEST(TransitionFire, OneTransition_TwoIncomingAndTwoOutgoingEdges)
   ASSERT_EQ(p.tokens[3], 4);
 };
 
-
-TEST(UITest, ConfigParsing)
+TEST(UITest, ConfigParsing_Default)
 {
   splendor::UI ui;
-  char **x = new char*;
   auto optionalModel = ui.cli
-    .get_model(0, x);
+    .get_model({});
   ASSERT_TRUE(optionalModel.has_value());
   auto model = optionalModel.value();
   ASSERT_EQ(model.players.size(), 2);
+};
+
+TEST(UITest, ConfigParsing_Custom)
+{
+  splendor::UI ui;
+  auto optionalModel = ui.cli
+    .get_model({"--config-path", "./assets/test/custom_config.json"});
+  ASSERT_TRUE(optionalModel.has_value());
+  auto model = optionalModel.value();
+  ASSERT_EQ(model.config.player_tokens_max, 1);
+  ASSERT_EQ(model.config.tokens_on_stack_N, 2);
+  ASSERT_EQ(model.config.players_N, 3);
+  ASSERT_EQ(model.config.reserved_cards_max, 4);
+  ASSERT_EQ(model.config.joker_tokens_N, 5);
+  ASSERT_EQ(model.config.cards.size(), 0);
 };

@@ -1,0 +1,8 @@
+{
+  "player_tokens_max": 1,
+  "tokens_on_stack_max": 2,
+  "players_N": 3,
+  "reserved_cards_max": 4,
+  "joker_tokens_N": 5,
+  "cards": []
+}

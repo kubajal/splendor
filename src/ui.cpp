@@ -187,7 +187,7 @@ splendor::Model create_model(const splendor::Config &config)
       players};
 }
 
-std::optional<splendor::Model> splendor::CLI::get_model(int ac, char **av)
+std::optional<splendor::Model> splendor::CLI::get_model(const std::vector<std::string> &args)
 {
   po::variables_map vm;
   po::options_description desc("Allowed options");
@@ -195,7 +195,7 @@ std::optional<splendor::Model> splendor::CLI::get_model(int ac, char **av)
   desc.add_options()
     ("help", "produce help message")
     ("config-path", po::value<std::string>()->default_value("assets/config.json"), "path to Splendor config");
-  auto parsedOptions = po::parse_command_line(ac, av, desc);
+  auto parsedOptions = po::command_line_parser(args).options(desc).run();
   po::store(parsedOptions, vm);
   po::notify(vm);
   if (vm.count("help"))

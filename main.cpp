@@ -1,10 +1,11 @@
-#include "ui.h"
+#include "src/ui.h"
 
 int main(int ac, char **av)
 {
   splendor::UI ui;
+  std::vector<std::string> args(av + 1, av + ac);
   ui.cli
-    .get_model(ac, av)
+    .get_model(args)
     .transform([&ui](splendor::Model model)
     {
       ui.display.initialize(model);

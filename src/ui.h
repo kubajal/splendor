@@ -58,7 +58,7 @@ namespace splendor
 
   struct CLI
   {
-    std::optional<splendor::Model> get_model(int ac, char **av);
+    std::optional<splendor::Model> get_model(const std::vector<std::string> &args);
   };
 
   struct UI
