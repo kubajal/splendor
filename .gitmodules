@@ -1,0 +1,3 @@
+[submodule "tools/Boost-Pretty-Printer"]
+	path = tools/Boost-Pretty-Printer
+	url = https://github.com/kubajal/Boost-Pretty-Printer.git
